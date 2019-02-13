@@ -132,7 +132,55 @@ getRearTable <- function() {
   return(reartypes)
 }
 
-# function that returns junction boundary 
+# function that returns junction boundary given rearrangement type
+# input: reartype = rearrangement type (e.g. "amp2"), 
+#        read = "r1" or "r2",
+#        gr = reduced granges object
+#        x = margin of interval
+# output: list containing chromosome (list$chr) and position (list$pos)
+getJunctionBoundary <- function(reartype, read, gr, x) {
+  chr <- seqnames(gr)
+  
+  if(reartype == "del1") {pos <- ifelse(read == "r1", end(gr) + x, start(gr) - x)}
+  else if(reartype == "del2") {pos <- ifelse(read == "r1", start(gr) - x, end(gr) + x)}
+  else if(reartype == "amp1") {stop('sorry... dunno what to do for amp1')}
+  else if(reartype == "amp2") {pos <- ifelse(read == "r1", end(gr) + x, start(gr) - x)}
+  else if(reartype == "amp3") {stop('sorry... dunno what to do for amp3')}
+  else if(reartype == "amp4") {pos <- ifelse(read == "r1", start(gr) - x, end(gr) + x)}
+  else if(reartype == "trans1") {pos <- ifelse(read == "r1", end(gr) + x, start(gr) - x)}
+  else if(reartype == "trans2") {pos <- ifelse(read == "r1", start(gr) - x, end(gr) + x)}
+  else if(reartype == "trans3") {pos <- ifelse(read == "r1", end(gr) + x, start(gr) - x)}
+  else if(reartype == "trans4") pos <- ifelse(read == "r1", start(gr) - x, end(gr) + x)
+  else if(reartype == "inv1") {pos <- ifelse(read == "r1", end(gr) + x, end(gr) + x)}
+  else if(reartype == "inv2") {pos <- ifelse(read == "r1", end(gr) + x, end(gr) + x)}
+  else if(reartype == "inv3") {pos <- ifelse(read == "r1", end(gr) + x, start(gr) - x)}
+  else if(reartype == "inv4") {pos <- ifelse(read == "r1", start(gr) - x, end(gr) + x)}
+  else if(reartype == "inv5") {pos <- ifelse(read == "r1", end(gr) + x, end(gr) + x)}
+  else if(reartype == "inv6") {pos <- ifelse(read == "r1", end(gr) + x, end(gr) + x)}
+  else if(reartype == "inv7") {pos <- ifelse(read == "r1", end(gr) + x, start(gr) - x)}
+  else if(reartype == "inv8") {pos <- ifelse(read == "r1", start(gr) - x, end(gr) + x)}
+  
+  return(list("chr" = chr, "pos" = pos))
+}
+
+
+# given galignment pairs of one rearrangement type, return reduced granges of r1s and r2s 
+getReducedR1R2 <- function(gap) {
+  r1 <- first(gap)
+  r2 <- last(gap)
+  r1_red <- range(granges(r1))
+  r2_red <- range(granges(r2))
+  return(list("r1_red" = r1_red, "r2_red" = r2_red))
+}
+
+# function to get rearrangement types for given comparable group
+# input: comparable group number (numeric)
+# output: array of rearrangement types (character)
+getTypesFromCompGroup <- function(group) {
+  t <- getRearTable()
+  types <- t[t$compgroup == group, ]$type
+  return(types)
+}
 
 # function to get strand of given read 
 # GA = GAlignments object
@@ -258,7 +306,11 @@ summarizeImproperRP <- function(irp) {
   return(irp_withmeta)
 }
 
-
+getCompGroupFromSIRP <- function(sirp) {
+  cg_array <- sirp@elementMetadata$comparable_group
+  cg_tab <- table(cg_array)
+  return(names(cg_tab)[which.max(cg_tab)])
+}
 
 # take 2, reduce first then label
 summarizeIRP <- function(irp) {
